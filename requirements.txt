@@ -1,7 +1,6 @@
-Flask
+streamlit
 firebase-admin
-numpy
 pandas
-tensorflow
+numpy
 scikit-learn
-Gunicorn
+tensorflow

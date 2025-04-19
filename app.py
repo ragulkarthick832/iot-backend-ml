@@ -7,18 +7,10 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import SimpleRNN, Dense
 from sklearn.preprocessing import MinMaxScaler
-import firebase_admin
-from firebase_admin import credentials, db
+import requests
 
-# Firebase init (using your custom Firebase URL and credential file)
+# Firebase Realtime DB URL
 FIREBASE_DB_URL = 'https://testingphase1-7b880-default-rtdb.firebaseio.com'
-
-# Initialize Firebase Admin
-if not firebase_admin._apps:
-    cred = credentials.Certificate("testingphase1-7b880-firebase-adminsdk-fbsvc-c1c4977f14.json")
-    firebase_admin.initialize_app(cred, {
-        'databaseURL': FIREBASE_DB_URL
-    })
 
 # Utility Functions
 @st.cache_resource
@@ -31,8 +23,12 @@ def load_models():
         return {}, {}
 
 def fetch_data():
-    ref = db.reference("FinalSensorData")
-    all_pumps = ref.get()
+    url = f"{FIREBASE_DB_URL}/FinalSensorData.json"
+    response = requests.get(url)
+    if response.status_code != 200:
+        return pd.DataFrame(columns=["flowRate", "current"])
+
+    all_pumps = response.json()
     data = []
     for pump_id in all_pumps or {}:
         for record_id, record in all_pumps[pump_id].items():
@@ -41,8 +37,8 @@ def fetch_data():
             except Exception:
                 continue
             data.append({
-                "flowRate": record.get("flowRate", 0),
-                "current": record.get("current", 0),
+                "flowRate": float(record.get("flowRate", 0)),
+                "current": float(record.get("current", 0)),
                 "timestamp": timestamp
             })
     

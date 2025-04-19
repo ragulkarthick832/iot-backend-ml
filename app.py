@@ -10,11 +10,14 @@ from sklearn.preprocessing import MinMaxScaler
 import firebase_admin
 from firebase_admin import credentials, db
 
-# Firebase init
+# Firebase init (using your custom Firebase URL and credential file)
+FIREBASE_DB_URL = 'https://testingphase1-7b880-default-rtdb.firebaseio.com'
+
+# Initialize Firebase Admin
 if not firebase_admin._apps:
     cred = credentials.Certificate("testingphase1-7b880-firebase-adminsdk-fbsvc-c1c4977f14.json")
     firebase_admin.initialize_app(cred, {
-        'databaseURL': 'https://testingphase1-7b880-default-rtdb.firebaseio.com/'
+        'databaseURL': FIREBASE_DB_URL
     })
 
 # Utility Functions
@@ -32,16 +35,17 @@ def fetch_data():
     all_pumps = ref.get()
     data = []
     for pump_id in all_pumps or {}:
-        for record in all_pumps[pump_id].values():
+        for record_id, record in all_pumps[pump_id].items():
             try:
                 timestamp = datetime.strptime(record.get("timestamp", ""), "%d_%m_%Y_%H_%M_%S")
-            except:
+            except Exception:
                 continue
             data.append({
                 "flowRate": record.get("flowRate", 0),
                 "current": record.get("current", 0),
                 "timestamp": timestamp
             })
+    
     df = pd.DataFrame(data)
     return df.sort_values("timestamp") if not df.empty else pd.DataFrame(columns=["flowRate", "current"])
 
